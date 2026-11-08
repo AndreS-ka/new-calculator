@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Value Effect Registry & Calculator | Ростелеком</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 108'%3E%3Cpath fill='%237712f5' d='M52 3L105 56L58 94L47 94Q27 94 27 74L27 45Q27 23 46 13Z'/%3E%3Cpath fill='%23ff4d00' d='M81 85L89.5 99L70 99Q64 99 65.8 94.6Z'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#f6f7fb;--card:#ffffff;--card2:#f8f9fd;
+  --border:#e7eaf3;--border2:#d6dcea;
+  --text:#111827;--muted:#5c6474;--muted2:#8b93a5;
+  --accent:#7712f5;--orange:#f4511e;
+  --green:#0e9f6e;--red:#d92d20;--yellow:#b54708;--blue:#2e90fa;
+  --r:14px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:radial-gradient(1000px 600px at 90% -10%,rgba(119,18,245,.06),transparent),
+  radial-gradient(800px 500px at -5% 110%,rgba(255,77,0,.04),transparent),var(--bg);
+  color:var(--text);font:15px/1.55 -apple-system,"Segoe UI",Roboto,Arial,sans-serif;min-height:100vh}
+button{font:inherit;cursor:pointer}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+header{position:sticky;top:0;z-index:60;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:10px 22px;background:rgba(255,255,255,.88);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.rtl-mark{height:40px;width:auto;filter:drop-shadow(0 2px 8px rgba(119,18,245,.22))}
+.brand-title{font-weight:800;font-size:16px}
+.brand-sub{font-size:11.5px;color:var(--muted)}
+.rtl-name{font-weight:800;color:#0b1b33}
+.hactions{margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.status{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+.status b{color:var(--text)}
+.dot{width:8px;height:8px;border-radius:50%;background:#12b76a;animation:pulse 2s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 7px rgba(18,183,106,0)}100%{box-shadow:0 0 0 0 rgba(18,183,106,0)}}
+.hbtn{background:#fff;border:1px solid var(--border2);color:#344054;padding:8px 14px;border-radius:10px;font-weight:700;font-size:13px;transition:.18s;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.hbtn:hover{transform:translateY(-1px);border-color:var(--accent);color:var(--accent);box-shadow:0 4px 12px -6px rgba(119,18,245,.4)}
+.hbtn-dash{border-color:rgba(119,18,245,.4);color:var(--accent);background:rgba(119,18,245,.05)}
+.tabs{position:sticky;top:60px;z-index:50;display:flex;gap:2px;padding:0 22px;flex-wrap:wrap;
+  background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+.tab{padding:14px 16px;background:none;border:none;color:var(--muted);font-weight:700;border-bottom:2px solid transparent;transition:.15s}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent);border-color:var(--accent)}
+main{max-width:1280px;margin:0 auto;padding:22px 22px 70px;width:100%}
+.view{display:none}
+.view.active{display:grid;gap:18px;animation:fadeUp .3s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;box-shadow:0 1px 3px rgba(16,24,40,.05);min-width:0}
+.card h3{font-size:16px}
+.sub{font-size:12.5px;color:var(--muted)}
+.card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;box-shadow:0 1px 3px rgba(16,24,40,.05);transition:.18s;min-width:0}
+.kpi:hover{transform:translateY(-2px);box-shadow:0 10px 24px -14px rgba(16,24,40,.35)}
+.kpi-label{font-size:12.5px;color:var(--muted);font-weight:600}
+.kpi-value{font-size:25px;font-weight:800;margin-top:8px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.kpi-sub{font-size:11.5px;color:var(--muted2);margin-top:4px}
+.btn{background:linear-gradient(135deg,#7712f5,#9b3dff);border:none;color:#fff;padding:10px 18px;border-radius:10px;font-weight:800;transition:.16s;box-shadow:0 4px 14px -6px rgba(119,18,245,.55);text-decoration:none;display:inline-flex;align-items:center;gap:7px;position:relative;overflow:hidden}
+.btn:hover{transform:translateY(-2px);filter:brightness(1.06);box-shadow:0 8px 22px -8px rgba(119,18,245,.7)}
+.btn:active{transform:scale(.96)}
+.btn::after{content:'';position:absolute;top:0;left:-75%;width:50%;height:100%;background:linear-gradient(105deg,transparent,rgba(255,255,255,.45),transparent);transform:skewX(-18deg);transition:left .55s}
+.btn:hover::after{left:135%}
+.btn.ghost{background:#fff;border:1px solid var(--border2);color:#344054;box-shadow:none}
+.btn.ghost::after{display:none}
+.btn.ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-sm{padding:7px 13px;font-size:12.5px;border-radius:9px}
+.btn-glow{animation:btnGlow 2.4s ease-in-out infinite}
+@keyframes btnGlow{50%{box-shadow:0 6px 28px -6px rgba(119,18,245,.95)}}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted2);text-align:left;padding:9px 10px;border-bottom:1px solid var(--border2);white-space:nowrap}
+td{padding:12px 10px;border-bottom:1px solid #eef1f6;vertical-align:middle}
+tbody tr:hover td{background:#f8f6ff}
+th.num,td.num{text-align:right}
+td.num{white-space:nowrap}
+.s-name{font-weight:700}
+.s-dep{font-size:11.5px;color:var(--muted2);overflow-wrap:anywhere}
+.badge{display:inline-block;padding:4px 11px;border-radius:99px;font-size:12px;font-weight:800;white-space:nowrap}
+.badge.green{background:rgba(16,175,120,.1);color:var(--green);border:1px solid rgba(16,175,120,.35)}
+.badge.yellow{background:rgba(247,144,9,.12);color:var(--yellow);border:1px solid rgba(247,144,9,.4)}
+.badge.loss{background:rgba(240,68,56,.08);color:var(--red);border:1px solid rgba(240,68,56,.35)}
+.badge.paused{background:rgba(90,100,120,.08);color:var(--muted);border:1px solid rgba(90,100,120,.3)}
+.mchip{display:inline-block;padding:4px 11px;border-radius:8px;font-size:12px;font-weight:700;border:1px solid;white-space:nowrap}
+.filterbar{display:flex;align-items:flex-end;gap:16px;row-gap:12px;flex-wrap:wrap}
+.filterbar label{display:grid;gap:5px;font-size:11px;color:var(--muted2);text-transform:uppercase;letter-spacing:.05em;font-weight:800;min-width:0}
+select,input[type=text],input[type=number]{background:#fff;color:var(--text);border:1px solid var(--border2);border-radius:10px;padding:9px 12px;font:inherit;max-width:100%}
+.filterbar select{min-width:170px;max-width:320px}
+#recSel{min-width:230px;max-width:400px}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.pgrid label{display:grid;gap:6px;font-size:11px;color:var(--muted2);text-transform:uppercase;letter-spacing:.04em;font-weight:800;min-width:0}
+.pgrid select,.pgrid input{width:100%;min-width:0}
+.pgrid .mchip{text-transform:none;align-self:start;margin-top:2px}
+.ctl-info{background:#fbfcff;border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-size:13.5px;color:#344054;min-height:41px;display:flex;align-items:center;text-transform:none;overflow-wrap:anywhere}
+.stepnum{display:inline-flex;width:24px;height:24px;border-radius:8px;background:linear-gradient(135deg,#7712f5,#9b3dff);color:#fff;font-size:13px;align-items:center;justify-content:center;margin-right:9px;flex:none}
+.formula{background:#fbfcff;border:1px dashed var(--border2);border-radius:10px;padding:12px 15px;font-family:ui-monospace,Consolas,monospace;font-size:12.5px;color:#344054;margin-top:14px;overflow-wrap:anywhere}
+.fmeta{color:#8b93a5;font-size:12px}
+.pm-chip{display:flex;flex-wrap:wrap;align-items:baseline;gap:9px;background:rgba(119,18,245,.07);border:1px solid rgba(119,18,245,.3);border-radius:12px;padding:12px 18px;font-size:14.5px;margin-bottom:15px}
+.pm-chip .pn{font-size:23px;color:var(--accent);font-variant-numeric:tabular-nums}
+.pm-chip .pu{font-weight:800}
+.pm-chip .pl{color:var(--muted);font-weight:600}
+.sc3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin-top:6px}
+.scard{border:1px solid;border-radius:12px;padding:13px 15px;background:#fff;min-width:0;transition:.18s}
+.scard:hover{transform:translateY(-2px);box-shadow:0 8px 18px -10px rgba(16,24,40,.25)}
+.scard span{font-size:11px;color:var(--muted2);font-weight:800;text-transform:uppercase;letter-spacing:.03em}
+.scard b{display:block;font-size:22px;margin:8px 0 4px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.scard i{font-style:normal;font-size:11.5px;color:var(--muted2)}
+.scard.cons{border-color:rgba(46,144,250,.4);background:rgba(46,144,250,.04)}.scard.cons b{color:#1570ef}
+.scard.base{border-color:rgba(119,18,245,.4);background:rgba(119,18,245,.05)}.scard.base b{color:var(--accent)}
+.scard.opt{border-color:rgba(16,175,120,.4);background:rgba(16,175,120,.04)}.scard.opt b{color:var(--green)}
+.rb{margin:20px 4px 4px}
+.rb-track{position:relative;height:12px;background:#e9edf5;border-radius:99px}
+.rb-track i{position:absolute;top:0;height:100%;border-radius:99px;background:linear-gradient(90deg,#2e90fa,#7712f5 50%,#0e9f6e);opacity:.3}
+.rb-track b{position:absolute;top:-5px;width:4px;height:22px;background:#7712f5;border-radius:2px;transform:translateX(-2px)}
+.rb-l{display:flex;justify-content:space-between;gap:10px;font-size:11px;color:var(--muted2);margin-top:8px}
+.rb-l span{min-width:0}.rb-l .mid{text-align:center;color:var(--accent);font-weight:700}
+.rb-l span:last-child{text-align:right}
+.rb-l b{font-size:12.5px;color:var(--text)}
+.pipe{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.pstep{display:inline-flex;align-items:center;border:1px solid var(--border2);background:#fff;color:var(--muted);padding:9px 15px;border-radius:99px;font-weight:800;font-size:13px;transition:.18s}
+.pstep:not(:last-child)::after{content:'→';margin-left:10px;opacity:.5}
+.pstep:hover{transform:translateY(-1px);border-color:var(--accent);color:var(--accent);box-shadow:0 3px 10px -4px rgba(16,24,40,.25)}
+.pstep.act.paused{background:rgba(90,100,120,.1);color:var(--muted);border-color:rgba(90,100,120,.35)}
+.pstep.act.yellow{background:rgba(247,144,9,.12);color:var(--yellow);border-color:rgba(247,144,9,.4)}
+.pstep.act.green{background:rgba(16,175,120,.12);color:var(--green);border-color:rgba(16,175,120,.4)}
+.pstep.act.loss{background:rgba(240,68,56,.1);color:var(--red);border-color:rgba(240,68,56,.4)}
+.docview{background:#fff;border:1px solid var(--border2);border-radius:12px;padding:18px 20px;font-size:12.5px;line-height:1.8;white-space:pre-wrap;color:#1d2939;max-height:340px;overflow-y:auto;overflow-wrap:anywhere}
+.expnote{font-size:11.5px;color:var(--muted2);margin-top:10px;line-height:1.6;overflow-wrap:anywhere}
+.expnote code{background:#f2f4f8;padding:1px 6px;border-radius:5px;font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#344054}
+.exprow{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}
+#toasts{position:fixed;right:18px;bottom:18px;display:grid;gap:9px;z-index:200;max-width:min(380px,calc(100vw - 36px))}
+.toast{background:#fff;border:1px solid var(--border);border-left:3px solid var(--green);border-radius:12px;padding:12px 15px;font-size:13.5px;box-shadow:0 12px 34px rgba(16,24,40,.18);animation:tin .25s;transition:.3s}
+.toast.warn{border-left-color:#f79009}.toast.info{border-left-color:var(--blue)}
+.toast.hide{opacity:0;transform:translateX(20px)}
+@keyframes tin{from{opacity:0;transform:translateX(24px)}to{opacity:1}}
+ul.clean{padding-left:18px;display:grid;gap:8px;font-size:13.5px;color:#344054}
+footer{text-align:center;color:var(--muted2);font-size:12px;padding:0 20px 28px}
+footer a{font-weight:700;text-decoration:none}
+@media(max-width:1000px){.kpis,.grid2{grid-template-columns:1fr}}
+@media(max-width:900px){.sc3{grid-template-columns:1fr}}
+@media(max-width:800px){.tabs{position:static}}
+@media(max-width:760px){.status{display:none}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <svg class="rtl-mark" viewBox="0 0 120 108" role="img" aria-label="Ростелеком">
+      <path fill="#7712f5" d="M52 3 L105 56 L58 94 L47 94 Q27 94 27 74 L27 45 Q27 23 46 13 Z"/>
+      <path fill="#ff4d00" stroke="#ff4d00" stroke-width="2.5" stroke-linejoin="round" d="M81 85 L89.5 99 L70 99 Q64 99 65.8 94.6 Z"/>
+    </svg>
+    <div>
+      <div class="brand-title">Value Effect Registry <span style="color:var(--muted2)">&amp;</span> Calculator</div>
+      <div class="brand-sub"><span class="rtl-name">Ростелеком</span> · калькулятор клиентского эффекта ИИ-сценариев</div>
+    </div>
+  </div>
+  <div class="hactions">
+    <span class="status"><span class="dot"></span> Входной контур дашборда · <b id="recCount">—</b></span>
+    <a class="hbtn hbtn-dash" id="lnkDash" href="#">📊 Перейти в дашборд</a>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button class="tab active" data-tab="registry">📋 Реестр эффектов</button>
+  <button class="tab" data-tab="calc">🧮 Калькулятор</button>
+  <button class="tab" data-tab="method">📐 Методика</button>
+</nav>
+
+<main>
+  <section id="tab-registry" class="view active">
+    <div class="kpis" id="regKpis"></div>
+    <div class="card filterbar">
+      <label>Статус согласования
+        <select id="fStatus">
+          <option value="all">Все статусы</option>
+          <option value="draft">Черновик</option>
+          <option value="validation">На валидации у клиента</option>
+          <option value="agreed">Согласовано с клиентом</option>
+          <option value="review">Требует пересмотра</option>
+        </select></label>
+      <label>Клиент
+        <select id="fClient"><option value="all">Все клиенты</option></select></label>
+      <span class="sub" style="margin-left:auto;align-self:center;max-width:430px">Реестр превращает технические наблюдаемые эффекты в согласованные, проверяемые и договорно зафиксированные показатели</span>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <div><h3>Записи реестра</h3><div class="sub">паспорт → конструктор измерения → расчёт → согласование → экспорт в дашборд</div></div>
+        <button class="btn ghost btn-sm" id="btnCsvAll">⬇ Выгрузить реестр (CSV)</button>
+      </div>
+      <div class="tbl-wrap"><table id="regTable"></table></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Аудит-лог согласований</h3><span class="sub">кто, когда и какую метрику утвердил</span></div>
+      <div class="tbl-wrap"><table id="auditTable"></table></div>
+    </div>
+  </section>
+
+  <section id="tab-calc" class="view">
+    <div class="card filterbar">
+      <label>Запись реестра
+        <select id="recSel"></select></label>
+      <span style="margin-left:auto;align-self:center;min-width:0" id="curBadge"></span>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div><h3><span class="stepnum">1</span>Паспорт ИИ-сценария</h3>
+        <div class="sub">клиент, подразделение, ИИ-агент, модель, тип эффекта, ответственный менеджер, период измерения</div></div></div>
+      <div class="pgrid">
+        <label>Клиент<input type="text" id="cClient"></label>
+        <label>Client ID<input type="text" id="cClientId"></label>
+        <label>Подразделение
+          <select id="cDep"><option>Контакт-центр</option><option>B2B-продажи</option><option>Внутренние сервисы</option></select></label>
+        <label>ИИ-сценарий (агент)<select id="cScen"></select></label>
+        <label>Модель<span id="cModel"></span></label>
+        <label>Тип эффекта<select id="cType"></select></label>
+        <label>Ответственный менеджер<input type="text" id="cManager"></label>
+        <label>Период измерения<input type="text" id="cPeriod"></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div><h3><span class="stepnum">2</span>Конструктор измерения</h3>
+        <div class="sub">baseline до внедрения · факт после внедрения · контроль · метод атрибуции эффекта ИИ-агенту</div></div></div>
+      <div class="pgrid" id="measureGrid"></div>
+      <div class="formula" id="formulaBox"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div><h3><span class="stepnum">3</span>Калькулятор эффекта и чувствительности</h3>
+        <div class="sub">консервативный, базовый и оптимистичный сценарии — диапазон, а не одна «красивая» цифра</div></div></div>
+      <div class="pm-chip" id="primaryChip"></div>
+      <div class="sc3" id="scCards"></div>
+      <div class="rb" id="rangeBar"></div>
+      <div style="margin-top:20px">
+        <div class="sub" style="font-weight:800;text-transform:uppercase;letter-spacing:.05em;font-size:11px;margin-bottom:9px">Матрица чувствительности · прокси-ценность, ₽/день</div>
+        <div class="tbl-wrap"><table id="sensTable"></table></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div><h3><span class="stepnum">4</span>Договорный статус и экспорт в дашборд</h3>
+        <div class="sub">статусы согласования · паспорт эффекта как приложение к SLA/контракту · экспорт согласованных метрик</div></div></div>
+      <div class="pipe" id="pipe"></div>
+      <div style="margin-top:18px">
+        <div class="sub" style="font-weight:700;margin-bottom:9px">🧾 «Паспорт эффекта» — документ, фиксирующий baseline, метод атрибуции, формулу и итоговое значение (можно приложить к SLA или контракту):</div>
+        <div class="docview" id="docView"></div>
+        <div class="exprow">
+          <button class="btn ghost btn-sm" id="btnDoc">⬇ Скачать паспорт (.txt)</button>
+        </div>
+      </div>
+      <div class="exprow" style="border-top:1px solid var(--border);padding-top:16px;margin-top:18px">
+        <button class="btn btn-glow" id="btnToDash">🚀 Экспортировать в дашборд</button>
+        <button class="btn ghost btn-sm" id="btnJson">⬇ JSON</button>
+        <button class="btn ghost btn-sm" id="btnCsv">⬇ CSV</button>
+        <button class="btn ghost btn-sm" id="btnCopy">📋 Копировать JSON</button>
+        <a class="btn ghost btn-sm" id="lnkDash2" href="#">📊 Просто открыть дашборд</a>
+      </div>
+      <div class="expnote">Поля экспорта (API / JSON / CSV): <code>client_id, scenario_id, metric, baseline, actual, attribution_method, agreed_value, status, period</code> + коридор значения. Метрика появится в дашборде в линзе <b>«Клиент»</b> со статусом согласования.</div>
+    </div>
+  </section>
+
+  <section id="tab-method" class="view">
+    <div class="card">
+      <div class="card-head"><h3>Типы эффекта и формулы прокси-ценности</h3></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Тип эффекта</th><th>Формула</th><th>Прокси-ценность</th></tr></thead><tbody>
+        <tr><td>Снижение доли нецелевых обращений</td><td>объём/день × Δдоли × AHT × тариф часа</td><td>высвобожденные операторо-часы × ₽/ч</td></tr>
+        <tr><td>Сэкономленные операторские часы</td><td>объём/день × Δминут / 60 × тариф часа</td><td>часы × ₽/ч</td></tr>
+        <tr><td>Рост конверсии</td><td>лиды/день × Δконверсии × чек × маржинальность</td><td>прирост маржинальной выручки, ₽/день</td></tr>
+        <tr><td>Сокращение стоимости обработки</td><td>объём/день × Δстоимости обращения</td><td>экономия операционных затрат, ₽/день</td></tr>
+      </tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Методы атрибуции и коридор достоверности</h3>
+        <span class="sub">коридор определяет ширину диапазона консервативный → оптимистичный</span></div>
+      <div class="tbl-wrap"><table id="methodTable"></table></div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-head"><h3>Ограничения и допущения</h3></div>
+        <ul class="clean">
+          <li>У клиента не всегда есть бухгалтерская выручка от ИИ — используем <b>прокси-метрики ценности</b> (часы × стоимость часа, Δконверсии × чек × маржа).</li>
+          <li>Это не «идеальная» бухгалтерская выручка, но <b>защищённый управленческий показатель</b>, согласовываемый с клиентом при внедрении.</li>
+          <li>Baseline фиксируется <b>до внедрения</b> и не пересматривается задним числом.</li>
+          <li>Слабый метод атрибуции → шире коридор достоверности и меньше доверие.</li>
+          <li>Калькулятор показывает <b>диапазон</b>: согласуется базовый сценарий, коридор фиксируется в паспорте.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>Зачем это нужно</h3></div>
+        <ul class="clean">
+          <li><b>Снижение риска споров:</b> эффект считается по заранее согласованной методике, а не «на лету».</li>
+          <li><b>Pricing на основе ценности:</b> согласованный KPI позволяет переходить к value-based и <b>gain-share</b> с расчётом, а не абстрактным предложением.</li>
+          <li><b>Квартальная сверка</b> с клиентом по утверждённому регламенту.</li>
+          <li><b>База знаний:</b> видно, какие сценарии дают реальный эффект, а какие — только техническую активность.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>Value Effect Registry &amp; Calculator · входной контур дашборда «AI Unit Economics» · <b>Ростелеком</b> ·
+<a id="footDash" href="#">открыть дашборд →</a> · демо-данные</footer>
+<div id="toasts"></div>
+
+<script>
+/* ============ ССЫЛКА НА ОПУБЛИКОВАННЫЙ ДАШБОРД ============ */
+const DASH_URL='https://andres-ka.github.io/dashbord-Rostelecom/';
+
+/* ============ HELPERS ============ */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const fmtInt=n=>Math.round(n).toLocaleString('ru-RU');
+function fmtMoney(n){const a=Math.abs(n);let s;
+  if(a>=1e6)s=(a/1e6).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2})+' млн ₽';
+  else if(a>=1e3)s=Math.round(a/1e3).toLocaleString('ru-RU')+' тыс ₽';
+  else s=Math.round(a).toLocaleString('ru-RU')+' ₽';
+  return(n<0?'−':'')+s;}
+const fmtNum=n=>n.toLocaleString('ru-RU',{maximumFractionDigits:1});
+function plural(n,f){const m=n%100,a=n%10;if(m>=11&&m<=19)return f[2];if(a===1)return f[0];if(a>=2&&a<=4)return f[1];return f[2];}
+function toast(msg,type='ok'){const t=document.createElement('div');t.className='toast '+type;t.innerHTML=msg;
+  $('#toasts').appendChild(t);setTimeout(()=>{t.classList.add('hide');setTimeout(()=>t.remove(),350);},4200);}
+const MCOLOR={'YandexGPT':'#f4511e','GigaChat':'#7712f5','OpenAI GPT-4o':'#1570ef','Локальная LLM':'#0e9f6e'};
+function rgba(hex,a){const v=hex.replace('#','');return `rgba(${parseInt(v.slice(0,2),16)},${parseInt(v.slice(2,4),16)},${parseInt(v.slice(4,6),16)},${a})`;}
+const animVals={},animRafs={};
+function animNum(key,el,target,fmt,dur=550){
+  if(!el)return;
+  const from=(key in animVals)?animVals[key]:target;
+  cancelAnimationFrame(animRafs[key]);
+  if(Math.abs(target-from)<1e-9){el.textContent=fmt(target);animVals[key]=target;return;}
+  const t0=performance.now();
+  const tick=t=>{const p=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-p,3),v=from+(target-from)*e;
+    el.textContent=fmt(v);animVals[key]=v;
+    if(p<1)animRafs[key]=requestAnimationFrame(tick);else animVals[key]=target;};
+  animRafs[key]=requestAnimationFrame(tick);}
+
+/* ============ MODEL ============ */
+const ETYPES={
+ nontarget:{label:'Снижение доли нецелевых обращений',unit:'%',params:[
+   {k:'volume',l:'Обращений в день',u:'шт'},{k:'aht',l:'Время обработки обращения',u:'ч',step:0.1},
+   {k:'cmin',l:'Стоимость операторо-часа, мин',u:'₽'},{k:'cmax',l:'Стоимость операторо-часа, макс',u:'₽'}],
+  calc(r){const d=(r.baseline-r.actual)/100,h=r.params.volume*d*r.params.aht;
+   return{kind:'hours',h,cmin:r.params.cmin,cmax:r.params.cmax,primary:['Высвобождается операторо-часов',h,'ч/день'],
+   formula:`Часы/день = ${fmtInt(r.params.volume)} × (${fmtNum(r.baseline)}% − ${fmtNum(r.actual)}%) × ${r.params.aht} ч = ${fmtInt(h)} ч`};}},
+ hours:{label:'Сэкономленные операторские часы',unit:'мин',params:[
+   {k:'volume',l:'Звонков в день',u:'шт'},
+   {k:'cmin',l:'Стоимость операторо-часа, мин',u:'₽'},{k:'cmax',l:'Стоимость операторо-часа, макс',u:'₽'}],
+  calc(r){const h=r.params.volume*(r.baseline-r.actual)/60;
+   return{kind:'hours',h,cmin:r.params.cmin,cmax:r.params.cmax,primary:['Высвобождается операторо-часов',h,'ч/день'],
+   formula:`Часы/день = ${fmtInt(r.params.volume)} × (${fmtNum(r.baseline)} − ${fmtNum(r.actual)} мин) / 60 = ${fmtInt(h)} ч`};}},
+ conversion:{label:'Рост конверсии',unit:'%',params:[
+   {k:'leads',l:'Целевых действий в день',u:'шт'},{k:'check',l:'Средний чек',u:'₽'},{k:'margin',l:'Маржинальность',u:'%'}],
+  calc(r){const d=(r.actual-r.baseline)/100,v=r.params.leads*d*r.params.check*r.params.margin/100;
+   return{kind:'money',v,primary:['Прирост маржинальной выручки',v,'/день'],
+   formula:`Ценность/день = ${fmtInt(r.params.leads)} × +${fmtNum(r.actual-r.baseline)} п.п. × ${fmtInt(r.params.check)} ₽ × ${r.params.margin}% = ${fmtInt(v)} ₽`};}},
+ cost:{label:'Сокращение стоимости обработки',unit:'₽ / обращение',params:[
+   {k:'volume',l:'Документов (обращений) в день',u:'шт'}],
+  calc(r){const v=r.params.volume*(r.baseline-r.actual);
+   return{kind:'money',v,primary:['Снижение операционных затрат',v,'/день'],
+   formula:`Ценность/день = ${fmtInt(r.params.volume)} × (${fmtInt(r.baseline)} − ${fmtInt(r.actual)} ₽) = ${fmtInt(v)} ₽`};}},
+};
+const METHODS={
+ cg:{label:'Сравнение периодов с контрольной группой',conf:[0.85,1.0,1.0]},
+ ab:{label:'A/B-тест',conf:[0.90,1.0,1.05]},
+ did:{label:'Разница в разницах (DiD)',conf:[0.80,0.95,1.10]},
+ ba:{label:'Сравнение периодов до/после',conf:[0.70,0.90,1.20]},
+ exp:{label:'Экспертная оценка с поправкой',conf:[0.55,0.80,1.35]},
+};
+const CONTROLS={cg:'Контрольная группа: объекты без ИИ',ab:'A/B: параллельный контроль 50/50',
+ did:'Когорты «с ИИ» и «без ИИ» (DiD)',ba:'Контрольный период: до внедрения',exp:'Экспертная поправка'};
+const STATUSES=[['draft','Черновик'],['validation','На валидации у клиента'],['agreed','Согласовано с клиентом'],['review','Требует пересмотра']];
+const STC={draft:'paused',validation:'yellow',agreed:'green',review:'loss'};
+const SCENLIST=['Голосовой робот в контакт-центре','Чат-бот «Умный помощник»','Ассистент оператора B2B','Генератор коммерческих предложений','Суммаризация тикетов','Робот обзвона по задолженности','Анализ договоров','HR-ассистент','Персональные предложения','Автоответчик первой линии'];
+
+let RECS=[
+ {id:'eff-mes',client:'Мосэнергосбыт',clientId:'CLI-0142',dep:'Контакт-центр',scen:'Голосовой робот в контакт-центре',scenId:'voice',model:'YandexGPT',
+  type:'nontarget',manager:'И. Петрова · ИИ-продукт',period:'Q1 2025 vs Q1 2024',baseline:40,actual:10,
+  params:{volume:16600,aht:0.5,cmin:430,cmax:700},method:'cg',status:'validation'},
+ {id:'eff-sber',client:'Северный Банк',clientId:'CLI-0031',dep:'B2B-продажи',scen:'Ассистент оператора B2B',scenId:'b2bassist',model:'OpenAI GPT-4o',
+  type:'conversion',manager:'А. Смирнов · B2B Продакт',period:'Фев–апр 2025, A/B 50/50',baseline:12,actual:18,
+  params:{leads:1200,check:48000,margin:30},method:'ab',status:'agreed'},
+ {id:'eff-rc',client:'РитейлСити',clientId:'CLI-0207',dep:'B2B-продажи',scen:'Персональные предложения',scenId:'offers',model:'GigaChat',
+  type:'conversion',manager:'М. Кузнецов · ИИ-продукт',period:'Март 2025 vs октябрь 2024',baseline:3.5,actual:4.6,
+  params:{leads:90000,check:2400,margin:22},method:'did',status:'draft'},
+ {id:'eff-vn',client:'Восток-Нефть',clientId:'CLI-0088',dep:'B2B-продажи',scen:'Анализ договоров',scenId:'contracts',model:'OpenAI GPT-4o',
+  type:'cost',manager:'И. Петрова · ИИ-продукт',period:'Апрель 2025 vs декабрь 2024',baseline:8400,actual:3100,
+  params:{volume:140},method:'ba',status:'review'},
+ {id:'eff-gs',client:'ГидроСистемы',clientId:'CLI-0119',dep:'Контакт-центр',scen:'Робот обзвона по задолженности',scenId:'debt',model:'YandexGPT',
+  type:'hours',manager:'А. Смирнов · B2B Продакт',period:'Май 2025 vs январь 2025',baseline:3.8,actual:2.4,
+  params:{volume:5200,cmin:480,cmax:620},method:'ba',status:'agreed'},
+ {id:'eff-fp',client:'ФармаПлюс',clientId:'CLI-0233',dep:'Контакт-центр',scen:'Чат-бот «Умный помощник»',scenId:'chat',model:'GigaChat',
+  type:'nontarget',manager:'М. Кузнецов · ИИ-продукт',period:'Апрель 2025 vs ноябрь 2024',baseline:30,actual:12,
+  params:{volume:4300,aht:0.2,cmin:440,cmax:520},method:'ba',status:'validation'},
+];
+let cur=RECS[0];
+let AUDIT=[
+ {t:'Сегодня, 09:12',who:'Северный Банк · Ю. Никитина',a:'Метрика «Рост конверсии» согласована: baseline 12% → факт 18%, базовое значение 1,04 млн ₽/день'},
+ {t:'Вчера, 15:40',who:'И. Петрова · FinOps',a:'Метрика «Восток-Нефть · Анализ договоров» отправлена на пересмотр: клиент не признал baseline'},
+ {t:'12 мая',who:'Система',a:'Создана запись «РитейлСити · Персональные предложения» (черновик)'},
+];
+function calcRec(r){
+ const t=ETYPES[r.type],conf=METHODS[r.method].conf,res=t.calc(r);
+ let low,point,high;
+ if(res.kind==='hours'){const cm=(res.cmin+res.cmax)/2;
+   low=res.h*conf[0]*res.cmin;point=res.h*conf[1]*cm;high=res.h*conf[2]*res.cmax;}
+ else{low=res.v*conf[0];point=res.v*conf[1];high=res.v*conf[2];}
+ return{res,conf,low,point,high,hours:res.kind==='hours'?res.h:null};}
+const DEMO={nontarget:[40,10],hours:[3.8,2.4],conversion:[12,18],cost:[8400,3100]};
+function defaultParams(type){switch(type){
+ case 'nontarget':return{volume:10000,aht:0.5,cmin:430,cmax:700};
+ case 'hours':return{volume:3000,cmin:480,cmax:620};
+ case 'conversion':return{leads:5000,check:3000,margin:25};
+ case 'cost':return{volume:200};}}
+function statusBadge(st){const f=STATUSES.find(x=>x[0]===st);return `<span class="badge ${STC[st]}">${f?f[1]:st}</span>`;}
+
+/* ============ РЕЕСТР ============ */
+const state={tab:'registry',statusFilter:'all',clientFilter:'all'};
+function renderRegistry(){
+ const agreed=RECS.filter(r=>r.status==='agreed');
+ const valSum=agreed.reduce((a,r)=>a+calcRec(r).point,0);
+ $('#regKpis').innerHTML=[
+  ['Записей в реестре',RECS.length,'паспортов ИИ-сценариев'],
+  ['Согласовано с клиентом',agreed.length,'договорно зафиксировано'],
+  ['На валидации',RECS.filter(r=>r.status==='validation').length,'ожидают подтверждения клиента'],
+  ['Прокси-ценность (согласованные)',fmtMoney(valSum)+'/день','сумма базовых сценариев'],
+ ].map(x=>`<div class="kpi"><div class="kpi-label">${x[0]}</div><div class="kpi-value">${x[1]}</div><div class="kpi-sub">${x[2]}</div></div>`).join('');
+ $('#recCount').textContent=RECS.length+' '+plural(RECS.length,['запись','записи','записей']);
+ const clients=[...new Set(RECS.map(r=>r.client))];
+ $('#fClient').innerHTML='<option value="all">Все клиенты</option>'+clients.map(c=>`<option ${state.clientFilter===c?'selected':''}>${c}</option>`).join('');
+ const list=RECS.filter(r=>(state.statusFilter==='all'||r.status===state.statusFilter)&&(state.clientFilter==='all'||r.client===state.clientFilter));
+ $('#regTable').innerHTML=`<thead><tr><th>Клиент</th><th>ИИ-сценарий</th><th>Тип эффекта</th><th>Baseline → Факт</th><th class="num">Прокси-ценность, ₽/день</th><th>Статус</th><th></th></tr></thead><tbody>`+
+  (list.length?list.map(r=>{const c=calcRec(r),t=ETYPES[r.type];
+   return `<tr><td><div class="s-name">${r.client}</div><div class="s-dep">${r.clientId}</div></td>
+   <td><div class="s-name">${r.scen}</div><div class="s-dep">${r.model} · ${r.dep}</div></td>
+   <td>${t.label}</td>
+   <td class="num"><b>${fmtNum(r.baseline)} → ${fmtNum(r.actual)}</b> ${t.unit}</td>
+   <td class="num"><b>${fmtMoney(c.point)}</b><div class="s-dep">${fmtMoney(c.low)} – ${fmtMoney(c.high)}</div></td>
+   <td>${statusBadge(r.status)}</td>
+   <td style="white-space:nowrap;text-align:right"><button class="btn ghost btn-sm" data-open="${r.id}">Открыть →</button> <button class="btn btn-sm" data-expdash="${r.id}">В дашборд →</button></td></tr>`;}).join('')
+  :'<tr><td colspan="7" class="sub" style="text-align:center;padding:20px">Ничего не найдено — измените фильтры</td></tr>')+'</tbody>';
+ $('#auditTable').innerHTML=`<thead><tr><th>Дата</th><th>Кто</th><th>Действие</th></tr></thead><tbody>`+
+  AUDIT.map(a=>`<tr><td style="white-space:nowrap;color:var(--muted)">${a.t}</td><td style="white-space:nowrap">${a.who}</td><td style="overflow-wrap:anywhere">${a.a}</td></tr>`).join('')+'</tbody>';}
+
+/* ============ КАЛЬКУЛЯТОР ============ */
+function renderRecSel(){
+ $('#recSel').innerHTML=RECS.map(r=>`<option value="${r.id}" ${r.id===cur.id?'selected':''}>${r.client} · ${r.scen}</option>`).join('');
+ $('#curBadge').innerHTML=statusBadge(cur.status)+` <span class="sub">период: ${cur.period}</span>`;}
+function renderPassportForm(){
+ $('#cClient').value=cur.client;$('#cClientId').value=cur.clientId;$('#cDep').value=cur.dep;
+ $('#cScen').innerHTML=SCENLIST.map(s=>`<option ${s===cur.scen?'selected':''}>${s}</option>`).join('');
+ $('#cModel').innerHTML=`<span class="mchip" style="color:${MCOLOR[cur.model]};border-color:${rgba(MCOLOR[cur.model],.35)};background:${rgba(MCOLOR[cur.model],.07)}">${cur.model}</span>`;
+ $('#cType').innerHTML=Object.entries(ETYPES).map(([k,v])=>`<option value="${k}" ${k===cur.type?'selected':''}>${v.label}</option>`).join('');
+ $('#cManager').value=cur.manager;$('#cPeriod').value=cur.period;}
+function renderConstructor(){
+ const t=ETYPES[cur.type];
+ $('#measureGrid').innerHTML=`
+  <label>Baseline (до внедрения), ${t.unit}<input type="number" id="mBase" value="${cur.baseline}" step="0.1"></label>
+  <label>Факт (после внедрения), ${t.unit}<input type="number" id="mActual" value="${cur.actual}" step="0.1"></label>
+  <label>Метод атрибуции<select id="mMethod">${Object.entries(METHODS).map(([k,v])=>`<option value="${k}" ${k===cur.method?'selected':''}>${v.label}</option>`).join('')}</select></label>
+  <label>Контроль<div class="ctl-info" title="Определяется методом атрибуции">${CONTROLS[cur.method]}</div></label>
+  ${t.params.map(p=>`<label>${p.l}, ${p.u}<input type="number" data-p="${p.k}" value="${cur.params[p.k]}" ${p.step?`step="${p.step}"`:''}></label>`).join('')}`;}
+function renderResults(){
+ const {res,conf,low,point,high}=calcRec(cur);
+ $('#formulaBox').innerHTML=`<b>Формула расчёта прокси-ценности:</b><br>${res.formula}<br><span class="fmeta">Коридор метода «${METHODS[cur.method].label}»: ×${conf[0]} / ×${conf[1]} / ×${conf[2]}${res.cmin!=null?` · тариф операторо-часа: ${fmtInt(res.cmin)}–${fmtInt(res.cmax)} ₽`:''}</span>`;
+ $('#primaryChip').innerHTML=`<b class="pn" id="animP"></b><span class="pu">${res.primary[2]}</span><span class="pl">— ${res.primary[0].toLowerCase()}</span>`;
+ animNum('primary',$('#animP'),res.primary[1],res.kind==='money'?fmtMoney:fmtInt);
+ const cm=res.cmin!=null?(res.cmin+res.cmax)/2:null;
+ $('#scCards').innerHTML=[
+  ['cons','Консервативный',low,'×'+conf[0]+(cm?' · тариф '+fmtInt(res.cmin)+' ₽/ч':'')],
+  ['base','Базовый (согласуется)',point,'×'+conf[1]+(cm?' · тариф '+fmtNum(cm)+' ₽/ч':'')],
+  ['opt','Оптимистичный',high,'×'+conf[2]+(cm?' · тариф '+fmtInt(res.cmax)+' ₽/ч':'')],
+ ].map(x=>`<div class="scard ${x[0]}"><span>${x[1]}</span><b class="sv" data-k="${x[0]}"></b><i>/день · ${x[3]}</i></div>`).join('');
+ animNum('low',$('#scCards [data-k="cons"]'),low,fmtMoney);
+ animNum('base',$('#scCards [data-k="base"]'),point,fmtMoney);
+ animNum('high',$('#scCards [data-k="opt"]'),high,fmtMoney);
+ const pos=v=>((v-low)/((high-low)||1))*100;
+ $('#rangeBar').innerHTML=`<div class="rb-track"><i style="left:0;width:100%"></i><b style="left:${pos(point)}%"></b></div>
+  <div class="rb-l"><span>консервативный<br><b>${fmtMoney(low)}</b></span><span class="mid">базовый<br><b>${fmtMoney(point)}</b></span><span>оптимистичный<br><b>${fmtMoney(high)}</b></span></div>`;
+ let st;
+ if(res.kind==='hours'){
+  const costs=[['мин тариф',res.cmin],['средний',cm],['макс тариф',res.cmax]];
+  st=`<thead><tr><th>Тариф операторо-часа</th>${conf.map(m=>`<th class="num">×${m} атрибуция</th>`).join('')}</tr></thead><tbody>`+
+   costs.map(c=>`<tr><td>${c[0]} · ${fmtNum(c[1])} ₽/ч</td>${conf.map(m=>`<td class="num"><b>${fmtMoney(res.h*m*c[1])}</b></td>`).join('')}</tr>`).join('')+'</tbody>';
+ }else{
+  st=`<thead><tr><th>Оценка</th>${conf.map(m=>`<th class="num">×${m} атрибуция</th>`).join('')}</tr></thead><tbody>`+
+   `<tr><td>Прокси-ценность, ₽/день</td>${conf.map(m=>`<td class="num"><b>${fmtMoney(res.v*m)}</b></td>`).join('')}</tr></tbody>`;}
+ $('#sensTable').innerHTML=st;}
+function passportText(){
+ const {res,conf,low,point,high}=calcRec(cur),t=ETYPES[cur.type],m=METHODS[cur.method];
+ const f=STATUSES.find(x=>x[0]===cur.status);
+ return `ПАСПОРТ ЭФФЕКТА ИИ-СЦЕНАРИЯ
+(приложение № ___ к договору / SLA между ПАО «Ростелеком» и «${cur.client}»)
+
+ 1. Клиент: ${cur.client} (client_id: ${cur.clientId})
+ 2. ИИ-сценарий: ${cur.scen} (scenario_id: ${cur.scenId}), модель: ${cur.model}
+ 3. Подразделение-владелец: ${cur.dep} · Ответственный: ${cur.manager}
+ 4. Период измерения: ${cur.period}
+ 5. Метрика эффекта: ${t.label}
+ 6. Baseline (до внедрения): ${fmtNum(cur.baseline)} ${t.unit}  →  Факт: ${fmtNum(cur.actual)} ${t.unit}
+ 7. Контроль: ${CONTROLS[cur.method]}
+ 8. Метод атрибуции: ${m.label} (коридор достоверности ×${conf.join(' / ×')})
+ 9. Формула расчёта: ${res.formula}
+10. Согласованное значение (базовый сценарий): ${fmtMoney(point)} в день
+11. Диапазон (консервативный – оптимистичный): ${fmtMoney(low)} – ${fmtMoney(high)} в день
+12. Статус: ${(f?f[1]:cur.status).toUpperCase()}
+
+Согласовано: исполнитель ________ / клиент ________
+Дата: ${new Date().toLocaleDateString('ru-RU')}
+Реестр: Value Effect Registry & Calculator · ПАО «Ростелеком»`;}
+function renderDoc(){$('#docView').textContent=passportText();}
+function renderPipe(){
+ $('#pipe').innerHTML=STATUSES.map(([k,l])=>`<button class="pstep ${cur.status===k?'act '+STC[k]:''}" data-s="${k}">${l}</button>`).join('');}
+function renderCalc(){renderRecSel();renderPassportForm();renderConstructor();renderResults();renderDoc();renderPipe();}
+
+/* ============ ЭКСПОРТ ============ */
+function exportPayload(r){
+ const {low,point,high,hours}=calcRec(r),t=ETYPES[r.type];
+ return {id:r.id,client_id:r.clientId,client:r.client,scenario_id:r.scenId,scenario:r.scen,
+  metric:t.label,baseline:r.baseline,baseline_unit:t.unit,actual:r.actual,
+  attribution_method:METHODS[r.method].label,agreed_value:Math.round(point),
+  value_low:Math.round(low),value_high:Math.round(high),unit:'₽/день',hours_per_day:hours!=null?Math.round(hours):null,
+  status:r.status,period:r.period,model:r.model,dep:r.dep,
+  updated:new Date().toISOString()};}
+function saveToLocal(p){
+ let list=[];try{list=JSON.parse(localStorage.getItem('rt_ver_records_v1')||'[]')}catch(e){}
+ list=list.filter(x=>!(x.client_id===p.client_id&&x.scenario_id===p.scenario_id));
+ list.push(p);localStorage.setItem('rt_ver_records_v1',JSON.stringify(list));}
+function exportToDash(r){
+ const p=exportPayload(r);saveToLocal(p);
+ AUDIT.unshift({t:'Только что',who:'Вы (демо) · '+r.manager,a:`Экспорт в дашборд: «${p.metric}» (${p.client}), статус «${STATUSES.find(s=>s[0]===r.status)[1]}», значение ${fmtMoney(calcRec(r).point)}/день`});
+ renderRegistry();
+ const b64=btoa(unescape(encodeURIComponent(JSON.stringify(p))));
+ toast(`🚀 Передаю в дашборд: <b>${p.metric}</b> · ${p.client}`,'info');
+ setTimeout(()=>{window.location.href=DASH_URL+'#ver-import='+b64;},400);}
+function download(name,content,type){const a=document.createElement('a');
+ a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();}
+function copyText(t){
+ if(navigator.clipboard&&window.isSecureContext)return navigator.clipboard.writeText(t);
+ return new Promise((res,rej)=>{const ta=document.createElement('textarea');ta.value=t;
+  ta.setAttribute('readonly','');ta.style.cssText='position:fixed;top:0;left:0;opacity:0';
+  document.body.appendChild(ta);ta.select();let ok=false;
+  try{ok=document.execCommand('copy');}catch(e){}
+  ta.remove();ok?res():rej(new Error('copy failed'));});}
+function csvPayload(r){
+ const p=exportPayload(r),head=['client_id','scenario_id','metric','baseline','actual','attribution_method','agreed_value','value_low','value_high','unit','status','period'];
+ return '\uFEFF'+head.join(';')+'\r\n'+head.map(k=>`"${String(p[k]??'').replace(/"/g,'""')}"`).join(';');}
+function csvAll(){
+ const head=['client_id','client','scenario_id','scenario','metric','baseline','baseline_unit','actual','attribution_method','agreed_value','value_low','value_high','unit','status','period'];
+ const rows=[head];RECS.forEach(r=>{const p=exportPayload(r);rows.push(head.map(k=>p[k]==null?'':p[k]));});
+ download('ver_registry_full.csv','\uFEFF'+rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(';')).join('\r\n'),'text/csv;charset=utf-8');
+ toast(`⬇ Реестр выгружен: ${RECS.length} ${plural(RECS.length,['запись','записи','записей'])}`,'info');}
+
+/* ============ НАВИГАЦИЯ / СОБЫТИЯ ============ */
+function switchTab(name){state.tab=name;
+ $$('#tabs .tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
+ $$('.view').forEach(v=>v.classList.toggle('active',v.id==='tab-'+name));
+ window.scrollTo({top:0,behavior:'smooth'});}
+function bindCalcInputs(){
+ const upd=()=>{renderResults();renderDoc();renderRegistry();};
+ $('#cClient').oninput=e=>{cur.client=e.target.value;upd();};
+ $('#cClientId').oninput=e=>{cur.clientId=e.target.value;upd();};
+ $('#cDep').onchange=e=>{cur.dep=e.target.value;upd();};
+ $('#cScen').onchange=e=>{cur.scen=e.target.value;upd();};
+ $('#cType').onchange=e=>{cur.type=e.target.value;cur.params=defaultParams(cur.type);
+   const d=DEMO[cur.type];cur.baseline=d[0];cur.actual=d[1];renderConstructor();upd();};
+ $('#cManager').oninput=e=>{cur.manager=e.target.value;};
+ $('#cPeriod').oninput=e=>{cur.period=e.target.value;renderDoc();};
+ const g=$('#measureGrid');
+ g.addEventListener('input',e=>{
+  if(e.target.id==='mBase'){cur.baseline=parseFloat(e.target.value)||0;upd();}
+  else if(e.target.id==='mActual'){cur.actual=parseFloat(e.target.value)||0;upd();}
+  else if(e.target.dataset.p){cur.params[e.target.dataset.p]=parseFloat(e.target.value)||0;upd();}});
+ g.addEventListener('change',e=>{
+  if(e.target.id==='mMethod'){cur.method=e.target.value;renderConstructor();upd();}});
+ $('#pipe').addEventListener('click',e=>{const b=e.target.closest('[data-s]');if(!b)return;
+  const old=STATUSES.find(s=>s[0]===cur.status)[1];
+  cur.status=b.dataset.s;
+  const now=STATUSES.find(s=>s[0]===cur.status)[1];
+  if(old!==now){AUDIT.unshift({t:'Только что',who:'Вы (демо) · '+cur.manager,a:`Статус «${ETYPES[cur.type].label}» (${cur.client}): «${old}» → «${now}». Значение: ${fmtMoney(calcRec(cur).point)}/день`});
+   toast(cur.status==='agreed'?'✅ Эффект согласован — можно экспортировать в дашборд':`Статус изменён: «${now}»`,cur.status==='agreed'?'ok':'info');}
+  renderPipe();renderRecSel();renderDoc();renderRegistry();});
+ $('#recSel').onchange=e=>{cur=RECS.find(r=>r.id===e.target.value);renderCalc();};
+ $('#btnDoc').onclick=()=>{download(`passport_effect_${cur.scenId}.txt`,passportText(),'text/plain;charset=utf-8');toast('🧾 Паспорт эффекта скачан','info');};
+ $('#btnToDash').onclick=()=>exportToDash(cur);
+ $('#btnJson').onclick=()=>{download('ver_export.json',JSON.stringify(exportPayload(cur),null,2),'application/json');toast('⬇ JSON выгружен','info');};
+ $('#btnCsv').onclick=()=>{download('ver_export.csv',csvPayload(cur),'text/csv;charset=utf-8');toast('⬇ CSV выгружен','info');};
+ $('#btnCopy').onclick=async()=>{try{await copyText(JSON.stringify(exportPayload(cur),null,2));toast('📋 JSON скопирован','info');}
+   catch(e){toast('Автокопирование недоступно — используйте ⬇ JSON','warn');}};}
+function bindRegistry(){
+ $('#fStatus').onchange=e=>{state.statusFilter=e.target.value;renderRegistry();};
+ $('#fClient').onchange=e=>{state.clientFilter=e.target.value;renderRegistry();};
+ $('#btnCsvAll').onclick=csvAll;
+ $('#regTable').addEventListener('click',e=>{
+  const o=e.target.closest('[data-open]');
+  if(o){cur=RECS.find(r=>r.id===o.dataset.open);switchTab('calc');renderCalc();return;}
+  const d=e.target.closest('[data-expdash]');
+  if(d)exportToDash(RECS.find(r=>r.id===d.dataset.expdash));});}
+function init(){
+ $('#lnkDash').href=DASH_URL;
+ $('#lnkDash2').href=DASH_URL;
+ $('#footDash').href=DASH_URL;
+ $('#methodTable').innerHTML=`<thead><tr><th>Метод атрибуции</th><th class="num">Консервативный</th><th class="num">Базовый</th><th class="num">Оптимистичный</th><th>Когда применять</th></tr></thead><tbody>`+
+  [['cg','Есть сопоставимые объекты без ИИ (филиалы, отделы)'],['ab','Можно разделить трафик 50/50'],['did','Есть когорты «с ИИ» и «без ИИ» во времени'],['ba','Быстрая оценка при внедрении'],['exp','Нет данных для контроля — узкое применение']].map(x=>{
+   const m=METHODS[x[0]];return `<tr><td><b>${m.label}</b></td><td class="num">×${m.conf[0]}</td><td class="num">×${m.conf[1]}</td><td class="num">×${m.conf[2]}</td><td style="color:var(--muted)">${x[1]}</td></tr>`;}).join('')+'</tbody>';
+ $$('#tabs .tab').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
+ bindRegistry();bindCalcInputs();renderRegistry();renderCalc();
+ const m=location.hash.match(/rec=([\w-]+)/);
+ if(m){const r=RECS.find(x=>x.id===m[1]);
+   if(r){cur=r;switchTab('calc');renderCalc();}
+   try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}}}
+init();
+</script>
+
+<!-- ===== АВТО-ДЕМО 2.0 · виртуальный курсор · АКТ 1 (ШАГИ 1–6) ===== -->
+<style>
+#demoPlay{position:fixed;left:18px;bottom:18px;z-index:300;background:linear-gradient(135deg,#7712f5,#9b3dff);color:#fff;border:none;border-radius:99px;padding:13px 22px;font-weight:800;font-size:14px;box-shadow:0 8px 24px -8px rgba(119,18,245,.8);transition:.15s}
+#demoPlay:hover{transform:translateY(-2px)}
+#vCursor{position:fixed;left:0;top:0;z-index:1300;pointer-events:none;opacity:0;transition:opacity .25s}
+#vCursor.on{opacity:1}
+#vCursor .vci{transition:transform .12s;filter:drop-shadow(0 3px 8px rgba(0,0,0,.35))}
+#vCursor .vci.press{transform:scale(.72)}
+.d-pulse{position:fixed;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;border:3px solid rgba(119,18,245,.9);z-index:1290;pointer-events:none;animation:dpa .65s ease-out forwards}
+@keyframes dpa{from{transform:scale(1);opacity:.95}to{transform:scale(4.2);opacity:0}}
+.d-packet{position:fixed;z-index:1295;pointer-events:none;background:#fff;border:1.5px solid rgba(119,18,245,.55);border-radius:12px;padding:10px 16px;box-shadow:0 16px 44px rgba(16,24,40,.3);font-size:13px;font-weight:800;white-space:nowrap}
+#demoBadge{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:1310;display:none;background:#101828;color:#fff;border-radius:16px;padding:12px 16px 14px;width:min(660px,92vw);box-shadow:0 18px 50px rgba(0,0,0,.45)}
+#demoBadge.show{display:block}
+.db-top{display:flex;align-items:center;gap:12px}
+#dbStep{flex:none;background:linear-gradient(135deg,#7712f5,#9b3dff);padding:4px 12px;border-radius:99px;font-size:12px;font-weight:800;white-space:nowrap}
+#dbText{flex:1;font-size:14.5px;font-weight:700;line-height:1.4}
+#dbSkip{flex:none;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:9px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer}
+#dbSkip:hover{background:rgba(255,255,255,.22)}
+.db-bar{height:4px;background:rgba(255,255,255,.15);border-radius:99px;margin-top:10px;overflow:hidden}
+#dbProg{display:block;height:100%;width:0;background:linear-gradient(90deg,#7712f5,#ff4d00);border-radius:99px;transition:width .4s}
+body.demo-lock header,body.demo-lock main,body.demo-lock footer{pointer-events:none;user-select:none}
+.demo-glow{outline:3px solid #7712f5!important;outline-offset:3px;border-radius:10px!important;animation:dg 1s ease-in-out infinite}
+@keyframes dg{50%{outline-color:#ffb27a;box-shadow:0 0 26px rgba(119,18,245,.55)}}
+</style>
+<button id="demoPlay">▶ Авто-демо</button>
+<div id="vCursor"><div class="vci"><svg viewBox="0 0 24 24" width="27" height="27"><path d="M5 2l14 10.4-6.9 1.2 3.4 7.6-3 1.3-3.3-7.5L5 18.8z" fill="#fff" stroke="#1d1d1f" stroke-width="1.5" stroke-linejoin="round"/></svg></div></div>
+<div id="demoBadge"><div class="db-top"><span id="dbStep">Шаг 1/6</span><span id="dbText"></span><button id="dbSkip">Пропустить</button></div><div class="db-bar"><i id="dbProg"></i></div></div>
+<script>
+/* ============ DEMO ENGINE ============ */
+const D={abort:false,busy:false};
+const dsleep=ms=>new Promise((res,rej)=>setTimeout(()=>D.abort?rej('abort'):res(),ms));
+const centerOf=el=>{const r=el.getBoundingClientRect();return[r.left+r.width/2,r.top+r.height/2];};
+let cx=innerWidth/2,cy=innerHeight-120;
+const vCur=document.getElementById('vCursor');
+function setCur(x,y){cx=x;cy=y;vCur.style.transform=`translate(${x}px,${y}px)`;}
+function glide(x,y,dur=700){return new Promise((res,rej)=>{
+  const sx=cx,sy=cy,t0=performance.now();
+  (function f(t){if(D.abort){rej('abort');return;}
+   const p=Math.min(1,(t-t0)/dur),e=p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
+   setCur(sx+(x-sx)*e,sy+(y-sy)*e);
+   p<1?requestAnimationFrame(f):res();})(t0);});}
+async function glideEl(el,dur=700){if(!el){await dsleep(200);return;}
+  try{el.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){}
+  await dsleep(480);
+  const[x,y]=centerOf(el);await glide(x,y,dur);}
+function pulseAt(x,y){const d=document.createElement('div');d.className='d-pulse';
+ d.style.left=x+'px';d.style.top=y+'px';document.body.appendChild(d);setTimeout(()=>d.remove(),720);}
+async function dclick(el){if(!el){await dsleep(250);return;}
+ await glideEl(el,620);
+ pulseAt(cx,cy);
+ const ic=vCur.querySelector('.vci');ic.classList.add('press');
+ setTimeout(()=>ic.classList.remove('press'),200);
+ await dsleep(150);
+ el.click();await dsleep(380);}
+async function dtype(el,text){if(!el)return;
+ await glideEl(el,560);el.focus();el.value='';
+ for(const ch of text){if(D.abort)throw'abort';
+  el.value+=ch;el.dispatchEvent(new Event('input',{bubbles:true}));
+  await dsleep(34+Math.random()*55);}
+ el.blur();await dsleep(300);}
+function hl(el,ms=1500){if(!el)return;el.classList.add('demo-glow');setTimeout(()=>el.classList.remove('demo-glow'),ms);}
+function setStep(n,total,text){document.getElementById('dbStep').textContent=`Шаг ${n}/${total}`;
+ document.getElementById('dbText').textContent=text;
+ document.getElementById('dbProg').style.width=(n/total*100)+'%';}
+function say(t){document.getElementById('dbText').textContent=t;}
+function flyPacket(from,to,html){
+ const el=document.createElement('div');el.className='d-packet';el.innerHTML=html;
+ el.style.left=Math.round(from.x-100)+'px';el.style.top=Math.round(from.y-26)+'px';
+ document.body.appendChild(el);
+ const dx=to.x-from.x,dy=to.y-from.y;
+ el.animate([
+  {transform:'translate(0,0) scale(1)',opacity:1},
+  {transform:`translate(${dx*.5}px,${dy*.5-50}px) scale(1.07)`,offset:.55},
+  {transform:`translate(${dx}px,${dy}px) scale(.78)`,opacity:0}
+ ],{duration:1050,easing:'cubic-bezier(.3,.7,.3,1)',fill:'forwards'})
+ .finished.then(()=>el.remove()).catch(()=>el.remove());}
+async function demoStart(){D.busy=true;D.abort=false;
+ document.body.classList.add('demo-lock');
+ document.getElementById('demoBadge').classList.add('show');
+ document.getElementById('demoPlay').style.display='none';
+ vCur.classList.add('on');setCur(innerWidth/2,innerHeight-110);}
+function demoFinish(){vCur.classList.remove('on');
+ document.body.classList.remove('demo-lock');
+ document.getElementById('demoBadge').classList.remove('show');
+ const b=document.getElementById('demoPlay');if(b)b.style.display='';
+ D.busy=false;D.abort=false;}
+document.getElementById('dbSkip').addEventListener('click',()=>D.abort=true);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&D.busy)D.abort=true;});
+
+/* Пакет улетает при ЛЮБОМ экспорте — и в демо, и при ручном клике */
+(function(){
+ const orig=window.exportToDash;
+ if(typeof orig!=='function')return;
+ window.exportToDash=function(r){
+  try{
+   const b=document.getElementById('btnToDash'),rc=b.getBoundingClientRect();
+   const from=(rc.width>0&&rc.top>0&&rc.top<innerHeight)
+     ?{x:rc.left+rc.width/2,y:rc.top+rc.height/2}:{x:innerWidth/2,y:innerHeight/2};
+   let lbl=`🚀 ${r.client} → дашборд`;
+   try{lbl=`🚀 ${r.client} · ${fmtMoney(calcRec(r).point)}/день → дашборд`;}catch(e){}
+   flyPacket(from,{x:innerWidth/2,y:-90},lbl);
+  }catch(e){}
+  setTimeout(()=>orig(r),950);};})();
+
+/* ФИЛЬМ · АКТ 1 · Шаги 1–6 */
+document.getElementById('demoPlay').onclick=async()=>{
+ if(D.busy)return;
+ await demoStart();
+ try{
+  await dsleep(600);
+  setStep(1,6,'Паспорт сценария: клиент «Мосэнергосбыт», голосовой робот в контакт-центре');
+  await dclick(document.querySelector('#tabs .tab[data-tab="calc"]'));
+  await glideEl(document.getElementById('cClient'),560);hl(document.getElementById('cClient'),1100);
+  await glideEl(document.getElementById('cType'),560);hl(document.getElementById('cType'),1100);
+  setStep(2,6,'Конструктор измерения: baseline — сначала 45%, чтобы увидеть живой пересчёт…');
+  await dtype(document.getElementById('mBase'),'45');
+  say('…а теперь фиксируем точный baseline: 40% нецелевых вызовов');
+  await dsleep(600);
+  await dtype(document.getElementById('mBase'),'40');
+  say('Факт после внедрения ИИ: сначала 15%…');
+  await dtype(document.getElementById('mActual'),'15');
+  say('…и финальный факт — 10%');
+  await dtype(document.getElementById('mActual'),'10');
+  setStep(3,6,'Калькулятор: ≈2 490 операторо-часов освобождается каждый день');
+  await glideEl(document.getElementById('primaryChip'),560);hl(document.getElementById('primaryChip'),1400);
+  say('Честный диапазон: 0,91 – 1,74 млн ₽/день — не одна «красивая» цифра');
+  await glideEl(document.getElementById('scCards'),560);hl(document.getElementById('scCards'),1600);
+  setStep(4,6,'Статус «Согласовано с клиентом» — метрика становится договорной');
+  await dclick(document.querySelector('#pipe [data-s="agreed"]'));
+  setStep(5,6,'Паспорт эффекта — приложение к SLA или контракту');
+  await glideEl(document.getElementById('docView'),560);hl(document.getElementById('docView'),1800);
+  setStep(6,6,'Экспортируем согласованные метрики в дашборд…');
+  await dclick(document.getElementById('btnToDash'));
+  await dsleep(2400);
+ }catch(e){}
+ finally{demoFinish();}};
+</script>
+</body>
+</html>
